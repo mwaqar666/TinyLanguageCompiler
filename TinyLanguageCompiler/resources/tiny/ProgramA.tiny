@@ -1,0 +1,53 @@
+﻿int someFunc(int a, char b) {
+    int x, y;
+    char t[5], s;
+    bool c;
+
+    x = 5;
+
+    return x;
+}
+
+int main () {
+    bool x, t;
+    char s[10], j[3];
+    char b, g;
+    int c, f;
+    float y, z;
+
+    z=1; // BBOOOOOOHHHHHAAAAAA   sasdasfd
+    y = 2;
+    c=3;
+ /*   f = 4;
+    x=true; */
+    x = c == 3;
+    x = c > 3;
+    x = c < 3;
+    x = c >= 3;
+    x = c <= 3;
+    t = false;
+    b='r';
+    g = 'y';
+
+    while (true) { b = b + 1; }
+
+    if(x)
+
+
+
+    {
+        y = y + z;
+
+
+                        }
+
+
+    else
+
+                                                            {
+        y = y - z     ;
+
+
+    }
+    return 0;
+                    }

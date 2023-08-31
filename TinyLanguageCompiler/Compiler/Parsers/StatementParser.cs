@@ -38,6 +38,11 @@ public class StatementParser
                 conditionParser.ParseConditionStatement();
                 break;
 
+            case { Type: TokenType.ReturnKeyword, Value: "return" }:
+                ReturnParser returnParser = new(_tokenizer);
+                returnParser.ParseReturnStatement();
+                break;
+
             default:
                 throw new SyntaxException("Invalid token");
         }

@@ -1,6 +1,7 @@
 ﻿int main () {
     bool x;
     int y, z;
+    int s[5];
     char t[4];
 
     y = 32766;
@@ -9,19 +10,13 @@
     x = true;
     y = y + z;
 
-    t[4] = '5';
+    return s[4];
 
-    while (x == true) {
-        y = y + z;
-    }
+    t[3] = '5';
 
-    if (x == true) {
-        y = y + z;
-    }
+    while (x == true) { y = y + z; }
 
-    else {
-        y = y - z;
-    }
+    if (x == true) { y = y + z; }
 
-    // return 0;
+    else { y = y - z; }
 }

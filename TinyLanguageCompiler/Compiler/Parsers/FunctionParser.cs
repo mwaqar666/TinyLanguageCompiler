@@ -30,7 +30,14 @@ public class FunctionParser
 
         try
         {
-            _tokenizer.CurrentFunction = _tokenizer.SymbolTable.AddFunction(functionIdentifier.Value, Tokenizer.Tokenizer.GuessDataType(functionDataType));
+            DataType returnType = Tokenizer.Tokenizer.GuessDataType(functionDataType);
+
+            if (functionIdentifier.Value is "main" && returnType is not DataType.Int)
+            {
+                throw new LogicalException("""Return type of "main" function must always be integer!""");
+            }
+
+            _tokenizer.CurrentFunction = _tokenizer.SymbolTable.AddFunction(functionIdentifier.Value, returnType);
         }
         catch (ArgumentException)
         {

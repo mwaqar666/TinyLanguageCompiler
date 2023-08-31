@@ -1,4 +1,5 @@
 ﻿using TinyLanguageCompiler.Compiler;
+using TinyLanguageCompiler.Compiler.Tokenizer;
 
 namespace TinyLanguageCompiler;
 
@@ -15,5 +16,22 @@ public static class Program
 
         Tokenizer tokenizer = new(programContents, symbolTable);
         tokenizer.PreProcess().Tokenize().ParseProgram();
+
+        Console.Write("""
+                      Provided program is valid ✅
+                      Check for Buffer and Integer Overflow? ([y] / n):
+                      """);
+
+        string? shouldRunProgram = Console.ReadLine();
+
+        if (shouldRunProgram is null or not ("" or "y")) return;
+
+        Simulator simulator = new(symbolTable);
+        simulator.RunProgram();
+
+        Console.Write("""
+                      Buffer and Integer Overflow checks passed ✅
+                      Exiting
+                      """);
     }
 }

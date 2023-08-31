@@ -8,6 +8,7 @@ public class SymbolTable
 {
     private readonly Dictionary<string, Function> _functions = new();
     private readonly Dictionary<string, Variable> _variables = new();
+    public int CodeBlockLevel { get; private set; }
 
     public Variable AddVariable(string variableName, DataType dataType, string functionScope, int arraySize = 0)
     {
@@ -33,9 +34,9 @@ public class SymbolTable
         }
     }
 
-    public Function AddFunction(string functionName, DataType returnType, List<Variable> parameters)
+    public Function AddFunction(string functionName, DataType returnType)
     {
-        Function function = new(functionName, returnType, parameters);
+        Function function = new(functionName, returnType);
         _functions.Add(functionName, function);
 
         return function;
@@ -49,7 +50,17 @@ public class SymbolTable
         }
         catch (KeyNotFoundException)
         {
-            throw new LogicalException($"""Function "{functionName}" is accessed without declaration""");
+            throw new FunctionNotFoundException($"""Function "{functionName}" not found in the stack""");
         }
+    }
+
+    public void IncrementCodeBlockLevel()
+    {
+        CodeBlockLevel++;
+    }
+
+    public void DecrementCodeBlockLevel()
+    {
+        CodeBlockLevel--;
     }
 }

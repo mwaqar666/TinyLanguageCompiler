@@ -10,11 +10,4 @@ public static class ExceptionFactory
 
         throw new SyntaxException("Invalid token");
     }
-
-    public static void CreateLogicalExceptionIf(bool condition, string message)
-    {
-        if (!condition) return;
-
-        throw new LogicalException(message);
-    }
 }

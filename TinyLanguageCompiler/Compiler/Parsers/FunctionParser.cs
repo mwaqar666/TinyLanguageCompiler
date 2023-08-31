@@ -1,15 +1,15 @@
-﻿using TinyLanguageCompiler.Enums;
+﻿using TinyLanguageCompiler.Contracts;
+using TinyLanguageCompiler.Enums;
 using TinyLanguageCompiler.Exceptions;
 using TinyLanguageCompiler.Models;
 
-namespace TinyLanguageCompiler.Compiler;
+namespace TinyLanguageCompiler.Compiler.Parsers;
 
 public class FunctionParser
 {
-    private readonly Tokenizer _tokenizer;
-    private Function? _currentFunction;
+    private readonly Tokenizer.Tokenizer _tokenizer;
 
-    public FunctionParser(Tokenizer tokenizer)
+    public FunctionParser(Tokenizer.Tokenizer tokenizer)
     {
         _tokenizer = tokenizer;
     }
@@ -25,15 +25,12 @@ public class FunctionParser
         Token functionParamBracketStart = _tokenizer.NextToken();
         ExceptionFactory.CreateSyntaxExceptionIf(functionParamBracketStart is not { Type: TokenType.Delimiter, Value: "(" });
 
-        List<Variable> parameters = new();
-        ParseFunctionParameters(functionIdentifier, ref parameters);
-
         Token functionParamBracketEnd = _tokenizer.NextToken();
         ExceptionFactory.CreateSyntaxExceptionIf(functionParamBracketEnd is not { Type: TokenType.Delimiter, Value: ")" });
 
         try
         {
-            _currentFunction = _tokenizer.SymbolTable.AddFunction(functionIdentifier.Value, Tokenizer.GuessDataType(functionDataType), parameters);
+            _tokenizer.CurrentFunction = _tokenizer.SymbolTable.AddFunction(functionIdentifier.Value, Tokenizer.Tokenizer.GuessDataType(functionDataType));
         }
         catch (ArgumentException)
         {
@@ -45,70 +42,27 @@ public class FunctionParser
 
         ParseFunctionDeclarations();
 
-        ParseFunctionStatements();
+        ParseFunctionStatements(_tokenizer.CurrentFunction);
 
         Token functionBodyBracketEnd = _tokenizer.NextToken();
         ExceptionFactory.CreateSyntaxExceptionIf(functionBodyBracketEnd is not { Type: TokenType.Delimiter, Value: "}" });
     }
 
-    private void ParseFunctionParameters(Token functionIdentifier, ref List<Variable> parameters)
-    {
-        Token functionParamBracketEnd = _tokenizer.NextToken();
-        if (functionParamBracketEnd is { Type: TokenType.Delimiter, Value: ")" })
-        {
-            _tokenizer.PreviousToken();
-            return;
-        }
-
-        _tokenizer.PreviousToken();
-
-        while (true)
-        {
-            parameters.Add(ParseFunctionParameter(functionIdentifier));
-
-            Token parameterDelimiter = _tokenizer.NextToken();
-            if (parameterDelimiter is { Type: TokenType.Delimiter, Value: "," }) continue;
-
-            _tokenizer.PreviousToken();
-            break;
-        }
-    }
-
-    private Variable ParseFunctionParameter(Token functionIdentifier)
-    {
-        Token parameterDataType = _tokenizer.NextToken();
-        ExceptionFactory.CreateSyntaxExceptionIf(parameterDataType is not { Type: TokenType.DataTypeKeyword });
-
-        Token parameterIdentifier = _tokenizer.NextToken();
-        ExceptionFactory.CreateSyntaxExceptionIf(parameterIdentifier is not { Type: TokenType.Identifier });
-
-        return _tokenizer.SymbolTable.AddVariable(parameterIdentifier.Value, Tokenizer.GuessDataType(parameterDataType), functionIdentifier.Value);
-    }
-
     private void ParseFunctionDeclarations()
     {
         Token variableDataType = _tokenizer.NextToken();
-        if (variableDataType is not { Type: TokenType.DataTypeKeyword })
-        {
-            _tokenizer.PreviousToken();
-            return;
-        }
-
         _tokenizer.PreviousToken();
+
+        if (variableDataType is not { Type: TokenType.DataTypeKeyword }) return;
 
         while (true)
         {
             ParseFunctionDeclaration();
 
             Token nextDeclarationDataType = _tokenizer.NextToken();
-
-            if (nextDeclarationDataType is not { Type: TokenType.DataTypeKeyword })
-            {
-                _tokenizer.PreviousToken();
-                return;
-            }
-
             _tokenizer.PreviousToken();
+
+            if (nextDeclarationDataType is not { Type: TokenType.DataTypeKeyword }) return;
         }
     }
 
@@ -127,7 +81,7 @@ public class FunctionParser
     {
         while (true)
         {
-            if (_currentFunction is null) throw new Exception("Function context missing!");
+            if (_tokenizer.CurrentFunction is null) throw new Exception("Function context missing!");
 
             Token variableIdentifier = _tokenizer.NextToken();
             ExceptionFactory.CreateSyntaxExceptionIf(variableIdentifier is not { Type: TokenType.Identifier });
@@ -139,17 +93,17 @@ public class FunctionParser
                 if (arrayLiteralStart is not { Type: TokenType.Delimiter, Value: "[" })
                 {
                     _tokenizer.PreviousToken();
-                    _tokenizer.SymbolTable.AddVariable(variableIdentifier.Value, Tokenizer.GuessDataType(variableDataType), _currentFunction.Name);
+                    _tokenizer.SymbolTable.AddVariable(variableIdentifier.Value, Tokenizer.Tokenizer.GuessDataType(variableDataType), _tokenizer.CurrentFunction.Name);
                 }
                 else
                 {
                     Token arraySize = _tokenizer.NextToken();
-                    ExceptionFactory.CreateSyntaxExceptionIf(arraySize is not { Type: TokenType.NumberLiteral });
+                    ExceptionFactory.CreateSyntaxExceptionIf(arraySize is not { Type: TokenType.IntLiteral });
 
                     Token arrayDelimiterEnd = _tokenizer.NextToken();
                     ExceptionFactory.CreateSyntaxExceptionIf(arrayDelimiterEnd is not { Type: TokenType.Delimiter, Value: "]" });
 
-                    _tokenizer.SymbolTable.AddVariable(variableIdentifier.Value, Tokenizer.GuessDataType(variableDataType), _currentFunction.Name, int.Parse(arraySize.Value));
+                    _tokenizer.SymbolTable.AddVariable(variableIdentifier.Value, Tokenizer.Tokenizer.GuessDataType(variableDataType), _tokenizer.CurrentFunction.Name, int.Parse(arraySize.Value));
                 }
             }
             catch (ArgumentException)
@@ -165,21 +119,27 @@ public class FunctionParser
         }
     }
 
-    private void ParseFunctionStatements()
+    private void ParseFunctionStatements(Function function)
     {
         Token functionBodyBracketEnd = _tokenizer.NextToken();
-        if (functionBodyBracketEnd is { Type: TokenType.Delimiter, Value: "}" })
-        {
-            _tokenizer.PreviousToken();
-            return;
-        }
-
         _tokenizer.PreviousToken();
 
-        if (_currentFunction is null) throw new Exception("Function context missing!");
+        if (functionBodyBracketEnd is { Type: TokenType.Delimiter, Value: "}" }) return;
 
-        StatementParser statementParser = new(_tokenizer, _currentFunction);
+        StatementParser statementParser = new(_tokenizer);
 
-        statementParser.ParseFunctionStatements();
+        while (true)
+        {
+            IStatement? statement = statementParser.ParseStatement();
+
+            if (statement is not null && _tokenizer.SymbolTable.CodeBlockLevel is 0) function.AddStatement(statement);
+
+            functionBodyBracketEnd = _tokenizer.NextToken();
+            _tokenizer.PreviousToken();
+
+            if (functionBodyBracketEnd is not { Type: TokenType.Delimiter, Value: "}" }) continue;
+
+            break;
+        }
     }
 }

@@ -18,7 +18,7 @@ public static class Program
         tokenizer.PreProcess().Tokenize().ParseProgram();
 
         Console.Write("""
-                      Provided program is valid ✅
+                      Provided program is valid.
                       Check for Buffer and Integer Overflow? ([y] / n):
                       """);
 
@@ -30,8 +30,10 @@ public static class Program
         simulator.RunProgram();
 
         Console.Write("""
-                      Buffer and Integer Overflow checks passed ✅
+                      Buffer and Integer Overflow checks passed.
                       Exiting
                       """);
+
+        Environment.Exit(0);
     }
 }

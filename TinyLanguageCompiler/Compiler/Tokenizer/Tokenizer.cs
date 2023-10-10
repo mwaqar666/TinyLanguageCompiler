@@ -27,16 +27,16 @@ public class Tokenizer
 
     public Tokenizer PreProcess()
     {
-        _code = RegexMatcher.MultiLineCommentPattern().Replace(_code, string.Empty);
+        _code = Regex.Replace(_code, @"/\*.*?\*/", string.Empty);
 
-        _code = RegexMatcher.SingleLineCommentPattern().Replace(_code, string.Empty);
+        _code = Regex.Replace(_code, @"\/\/[^\n]*", string.Empty);
 
         return this;
     }
 
     public Tokenizer Tokenize()
     {
-        MatchCollection matches = RegexMatcher.TokenizePattern().Matches(_code);
+        MatchCollection matches = Regex.Matches(_code, @"(int|float|bool|char|if|else|while|true|false|return)|('[^\n\t\r']')|(\d+\.\d{1,2})|(\d+)|(,|;|{|}|\(|\)|\[|\])|(\+|-|\*|\/|%)|(&&|\|\||==|!=|>=|<=|=|>|<)|([a-zA-Z_]\w*)");
 
         foreach (Match match in matches)
         {
@@ -85,13 +85,13 @@ public class Tokenizer
                     if (value.Length == 3 && value.StartsWith("'") && value.EndsWith("'"))
                         _tokens.Add(new Token(TokenType.CharacterLiteral, value));
 
-                    else if (RegexMatcher.FloatPattern().IsMatch(value))
+                    else if (Regex.IsMatch(value, @"\d+\.\d{1,2}"))
                         _tokens.Add(new Token(TokenType.FloatLiteral, value));
 
-                    else if (RegexMatcher.IntPattern().IsMatch(value))
+                    else if (Regex.IsMatch(value, @"\d+"))
                         _tokens.Add(new Token(TokenType.IntLiteral, value));
 
-                    else if (RegexMatcher.IdentifierPattern().IsMatch(value))
+                    else if (Regex.IsMatch(value, @"[a-zA-Z_]\w*"))
                         _tokens.Add(new Token(TokenType.Identifier, value));
 
                     break;
